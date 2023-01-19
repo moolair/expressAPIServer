@@ -10,10 +10,12 @@ var favoriteSchema = new Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     },
-    dishes: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Dish'
-    }]
+    dishes: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Dish'
+        }
+    ]
 }, {
     timestamps: true
 });

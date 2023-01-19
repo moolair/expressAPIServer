@@ -29,34 +29,46 @@ favoriteRouter.route('/')
             }, (err) => next(err))
             .catch((err) => next(err));
     })
-    // .post(cors.corsWithOptions, authenticate.verifyUser, (req, res, next) => {
-    //     Favorites.create(req)
-    //         .then((favorite) => {
-    //             console.log('Favorite Created ', favorite);
-    //             res.statusCode = 200;
-    //             res.setHeader('Content-Type', 'application/json');
-    //             res.json(favorite);
-    //         }, (err) => next(err))
-    //         .catch((err) => next(err));
-    // })
-    .post(cors.corsWithOptions, (req, res, next) => {
-        // Favorites.findById(req.params.favoriteId)
-        // console.log(req.params.favoriteId)
-        //     .then((favorite) => {
-        //         req.body.dish = req.user._id;
-        //         favorite.dishes.push(req.body);
-        //         favorite.save()
-        //             .then((favorite) => {
-        //                 Favorites.findById(favorite._id)
-        //                     .populate('dishes.dish')
-        //                     .then((favorite) => {
-        //                         res.statusCode = 200;
-        //                         res.setHeader('Content-Type', 'application/json');
-        //                         res.json(favorite);
-        //                     })
-        //             }, (err) => next(err));
-        //     }, (err) => next(err))
-        //     .catch((err) => next(err));
+    .post(cors.corsWithOptions, authenticate.verifyUser, (req, res, next) => {
+        Favorites.findOne({ user: req.user._id })
+            .then((favorite) => {
+                if (favorite != null) {
+                    // console.log('Favorite found ', favorite._id);
+                    // console.log('user found ', req.user._id);
+                    // console.log('this is req.body: ', req.body);
+                    req.body.forEach(value => {
+                        // console.log('This is req.body value: ', value);
+                        // console.log('Object.values(value).toString(): ', Object.values(value).toString(), typeof Object.values(value).toString());
+                        // console.log('favorite.dishes.keys(): ', favorite.dishes);
+                        // console.log('Does it have duplicate? ', favorite.dishes.indexOf(Object.values(value).toString()) === -1);
+                        if (favorite.dishes.indexOf(Object.values(value).toString()) === -1)
+                            favorite.dishes.push(value);
+                    })
+                    favorite.save()
+                        .then((favorite) => {
+                            Favorites.findById(favorite._id)
+                                .populate('_id')
+                                .then((favorite) => {
+                                    res.statusCode = 200;
+                                    res.setHeader('Content-Type', 'application/json');
+                                    res.json(favorite);
+                                })
+                        }, (err) => next(err));
+                }
+                else {
+                    Favorites.create({ user: req.user._id, dishes: req.body })
+                        .then((favorite) => {
+                            Favorites.findOne(favorite._id)
+                                .populate('_id')
+                                .then((favorite) => {
+                                    res.statusCode = 200;
+                                    res.setHeader('Content-Type', 'application/json');
+                                    res.json(favorite);
+                                }, (err) => next(err))
+                                .catch((err) => next(err));
+                        })
+                }
+            })
     })
     .put(cors.corsWithOptions, authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
         res.statusCode = 403;
@@ -102,12 +114,12 @@ favoriteRouter.route('/:dishId')
                 //of favorite dishes for the user, if the dishes do not already exists in the list of favorites.
                 if (favorite != null) {
                     // console.log('current favorite - ', favorite.dishes);
-                    console.log('Deos it come here?', favorite.dishes.filter(includes => includes.id === req.params.dishId))
+                    // console.log('Deos it come here?', typeof req.params.dishId);
                     if (favorite.dishes.indexOf(req.params.dishId) === -1)
                         favorite.dishes.push(req.params.dishId);
                     favorite.save()
                         .then((favorite) => {
-                            Favorites.findOne({ user: req.user._id })
+                            Favorites.findOne(favorite._id)
                                 .populate('_id')
                                 .then((favorite) => {
                                     res.statusCode = 200;
