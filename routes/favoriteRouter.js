@@ -3,7 +3,6 @@ const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const authenticate = require('../authenticate');
 const cors = require('./cors');
-var jwt = require('jsonwebtoken'); // used to create, sign, and verify tokens
 const Favorites = require('../models/favorite');
 const Dishes = require('../models/dishes');
 const Users = require('../models/user');
@@ -67,28 +66,24 @@ favoriteRouter.route('/')
     })
     .put(cors.corsWithOptions, authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
         res.statusCode = 403;
-        res.end('PUT operation not supported on /Favorites');
+        res.end('PUT operation not supported on /favorites');
     })
     .delete(cors.corsWithOptions, authenticate.verifyUser, (req, res, next) => {
-        Favorites.findOne({ user: req.user._id })
-            .then((favorite) => {
-                favorite.remove
-            })
+        Favorites.remove({ user: req.user._id })
+            .then((resp) => {
+                res.statusCode = 200;
+                res.setHeader('Content-Type', 'application/json');
+                res.json(resp);
+            }, (err) => next(err))
+            .catch((err) => next(err));
     });
 
 favoriteRouter.route('/:dishId')
     .options(cors.corsWithOptions, (req, res) => { res.sendStatus(200); })
-    // .get(cors.cors, (req, res, next) => {
-    //     Favorites.findById(req.params.favoriteId)
-    //         .populate('comments.author')
-    //         .then((favorite) => {
-    //             console.log('favorite Created ', favorite);
-    //             res.statusCode = 200;
-    //             res.setHeader('Content-Type', 'application/json');
-    //             res.json(favorite);
-    //         }, (err) => next(err))
-    //         .catch((err) => next(err));
-    // })
+    .get(cors.cors, (req, res, next) => {
+        res.statusCode = 403;
+        res.end('Get operation not supported on /favorites/ID_of_dish');
+    })
     .post(cors.corsWithOptions, authenticate.verifyUser, (req, res, next) => {
         // how do i find favoritesID related to the userid?
         //the following is specific favorite id
@@ -146,7 +141,7 @@ favoriteRouter.route('/:dishId')
             .catch((err) => next(err));
     })
     .delete(cors.corsWithOptions, authenticate.verifyUser, (req, res, next) => {
-        //remove only the user's favorite
+        //remove only the dish id from the user's favorite
         Favorites.findOne({ user: req.user._id })
             .then((favorite) => {
                 if (favorite != null) {
